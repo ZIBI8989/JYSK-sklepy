@@ -4,19 +4,18 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#176b59">
-<link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="manifest" href="./manifest.json">
 <title>JYSK Sklepy</title>
 <style>
 :root{font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#182522;background:#f4f7f6}
 *{box-sizing:border-box}body{margin:0}header{background:#176b59;color:white;padding:22px 18px 18px;position:sticky;top:0;z-index:2;box-shadow:0 2px 8px #0002}
 h1{font-size:24px;margin:0 0 14px}.search{width:100%;border:0;border-radius:13px;padding:14px 15px;font-size:16px;outline:none}
 main{max-width:720px;margin:auto;padding:16px 14px 100px}.toolbar{display:flex;align-items:center;gap:8px;margin:4px 0 14px;flex-wrap:wrap}
-.count{color:#52615d;font-size:14px;margin-right:auto}.btn{border:0;border-radius:12px;padding:11px 14px;font-size:14px;font-weight:650;background:#e1eee9;color:#155d4d}
+.count{color:#176b59;font-size:15px;font-weight:750;margin-right:auto}.btn{border:0;border-radius:12px;padding:11px 14px;font-size:14px;font-weight:650;background:#e1eee9;color:#155d4d}
 .table{background:white;border-radius:16px;overflow:hidden;box-shadow:0 2px 10px #173b3010}
-.head,.item{display:grid;grid-template-columns:minmax(85px,.8fr) minmax(90px,1.4fr) 88px;align-items:center;gap:8px;padding:13px 12px}
+.head,.item{display:grid;grid-template-columns:38px minmax(75px,.8fr) minmax(90px,1.4fr) 88px;align-items:center;gap:8px;padding:13px 12px}
 .head{background:#eaf1ee;color:#45635a;font-size:12px;font-weight:750;letter-spacing:.05em}
-.item{border-top:1px solid #edf0ef;min-height:58px}.num{font-weight:750;color:#176b59}.city{overflow-wrap:anywhere}
+.item{border-top:1px solid #edf0ef;min-height:58px}.lp{font-size:11px;color:#899590;text-align:center;font-weight:600}.num{font-weight:750;color:#176b59}.city{overflow-wrap:anywhere}
 .actions{display:flex;justify-content:flex-end;gap:2px}.icon{border:0;background:transparent;font-size:19px;padding:7px;color:#53615c}
 .empty{text-align:center;color:#65736e;padding:42px 16px;line-height:1.5}
 .fab{position:fixed;right:20px;bottom:22px;background:#176b59;color:white;border:0;border-radius:28px;padding:16px 21px;font-size:16px;font-weight:700;box-shadow:0 4px 14px #0003}
@@ -26,123 +25,42 @@ label{display:block;font-size:13px;font-weight:650;color:#52615d;margin:13px 0 6
 input.field{width:100%;padding:13px;border:1px solid #cbd7d2;border-radius:11px;font-size:16px}
 .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:22px}.primary{background:#176b59;color:white}.danger{color:#a32626;background:#fae8e8}
 .note{font-size:12px;color:#73817c;text-align:center;margin-top:14px}
-@media(max-width:360px){.head,.item{grid-template-columns:75px minmax(80px,1fr) 76px;padding:11px 8px}.icon{padding:5px}}
+@media(max-width:360px){.head,.item{grid-template-columns:30px 70px minmax(75px,1fr) 70px;padding:11px 8px;gap:5px}.icon{padding:5px}.btn{padding:10px 11px}}
 </style>
 </head>
 <body>
-<header>
-<h1>JYSK Sklepy</h1>
-<input id="search" class="search" placeholder="Szukaj numeru lub miasta..." autocomplete="off">
-</header>
+<header><h1>JYSK Sklepy</h1><input id="search" class="search" placeholder="Szukaj numeru lub miasta..." autocomplete="off"></header>
 <main>
 <div class="toolbar">
-<span class="count" id="count">Sklepów: 0</span>
-<button class="btn" id="sort">Sortuj: numer ↑</button>
-<button class="btn" id="direction" aria-label="Zmień kierunek">↕</button>
-<button class="btn" id="export">Eksport CSV</button><button class="btn" id="import">Import CSV</button><input id="importFile" type="file" accept=".csv,text/csv" hidden>
+<span class="count" id="count">Odwiedzone sklepy: 0</span>
+<button class="btn" id="sort">Sortuj: numer</button><button class="btn" id="direction" aria-label="Zmień kierunek">↑</button>
+<button class="btn" id="export">Eksport CSV</button><button class="btn" id="importBtn">Import CSV</button><input id="importFile" type="file" accept=".csv,text/csv" hidden>
 </div>
-<section class="table">
-<div class="head"><span>NUMER</span><span>MIASTO</span><span></span></div>
-<div id="rows"></div>
-</section>
-<div class="note">Dane są zapisywane w pamięci tej przeglądarki na telefonie.</div>
+<section class="table"><div class="head"><span>LP.</span><span>NUMER</span><span>MIASTO</span><span></span></div><div id="rows"></div></section>
+<div class="note">Dane są zapisywane w pamięci tej przeglądarki na telefonie. Rób kopię przez Eksport CSV.</div>
 </main>
 <button class="fab" id="add">＋ Dodaj sklep</button>
-<dialog id="editor">
-<h2 id="dialogTitle">Dodaj sklep</h2>
-<label for="number">Numer sklepu</label><input id="number" class="field" placeholder="np. P245" maxlength="24" autocomplete="off">
-<label for="city">Miasto</label><input id="city" class="field" placeholder="np. Kraków" maxlength="60" autocomplete="off">
-<div class="modal-actions"><button class="btn" id="cancel">Anuluj</button><button class="btn primary" id="save">Zapisz</button></div>
-</dialog>
-<dialog id="confirm">
-<h2>Usunąć sklep?</h2><p id="confirmText"></p>
-<div class="modal-actions"><button class="btn" id="keep">Anuluj</button><button class="btn danger" id="remove">Usuń</button></div>
-</dialog>
+<dialog id="editor"><h2 id="dialogTitle">Dodaj sklep</h2><label for="number">Numer sklepu</label><input id="number" class="field" placeholder="np. P245" maxlength="24" autocomplete="off"><label for="city">Miasto</label><input id="city" class="field" placeholder="np. Kraków" maxlength="60" autocomplete="off"><div class="modal-actions"><button class="btn" id="cancel">Anuluj</button><button class="btn primary" id="save">Zapisz</button></div></dialog>
+<dialog id="confirm"><h2>Usunąć sklep?</h2><p id="confirmText"></p><div class="modal-actions"><button class="btn" id="keep">Anuluj</button><button class="btn danger" id="remove">Usuń</button></div></dialog>
 <script>
-(()=> {
-const KEY='mojeSklepyData_v1';
-let stores=[];try{stores=JSON.parse(localStorage.getItem(KEY)||'[]')}catch(e){}
-let sortCity=false,asc=true,editingId=null,deletingId=null;
-const $=id=>document.getElementById(id);
-const collator=new Intl.Collator('pl',{sensitivity:'base'});
+(()=>{
+const KEY='mojeSklepyData_v1';let stores=[];try{stores=JSON.parse(localStorage.getItem(KEY)||'[]')}catch(e){}
+let sortCity=false,asc=true,editingId=null,deletingId=null;const $=id=>document.getElementById(id);const collator=new Intl.Collator('pl',{sensitivity:'base'});
 function persist(){localStorage.setItem(KEY,JSON.stringify(stores))}
 function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-function render(){
- const q=$('search').value.trim().toLocaleLowerCase('pl');
- let list=stores.filter(s=>s.number.toLocaleLowerCase('pl').includes(q)||s.city.toLocaleLowerCase('pl').includes(q));
- list.sort((a,b)=>{let c=sortCity?collator.compare(a.city,b.city):a.number.localeCompare(b.number,'pl',{numeric:true,sensitivity:'base'});return asc?c:-c});
- $('count').textContent='Sklepów: '+stores.length;
- $('sort').textContent='Sortuj: '+(sortCity?'miasto':'numer');
- $('direction').textContent=asc?'↑':'↓';
- $('rows').innerHTML=list.length?list.map(s=>`<div class="item">
- <span class="num">${esc(s.number)}</span><span class="city">${esc(s.city)}</span>
- <span class="actions"><button class="icon" data-edit="${s.id}" aria-label="Edytuj">✎</button><button class="icon" data-delete="${s.id}" aria-label="Usuń">×</button></span></div>`).join(''):
- `<div class="empty">${stores.length?'Nie znaleziono sklepu.':'Nie masz jeszcze sklepów.<br>Dodaj pierwszy przyciskiem poniżej.'}</div>`;
+function render(){const q=$('search').value.trim().toLocaleLowerCase('pl');let list=stores.filter(s=>String(s.number).toLocaleLowerCase('pl').includes(q)||String(s.city).toLocaleLowerCase('pl').includes(q));list.sort((a,b)=>{let c=sortCity?collator.compare(a.city,b.city):a.number.localeCompare(b.number,'pl',{numeric:true,sensitivity:'base'});return asc?c:-c});
+$('count').textContent='Odwiedzone sklepy: '+stores.length;$('sort').textContent='Sortuj: '+(sortCity?'miasto':'numer');$('direction').textContent=asc?'↑':'↓';
+$('rows').innerHTML=list.length?list.map((s,i)=>`<div class="item"><span class="lp">${i+1}</span><span class="num">${esc(s.number)}</span><span class="city">${esc(s.city)}</span><span class="actions"><button class="icon" data-edit="${s.id}" aria-label="Edytuj">✎</button><button class="icon" data-delete="${s.id}" aria-label="Usuń">×</button></span></div>`).join(''):`<div class="empty">${stores.length?'Nie znaleziono sklepu.':'Nie masz jeszcze sklepów.<br>Dodaj pierwszy przyciskiem poniżej.'}</div>`;
 }
 function openEditor(s){editingId=s?s.id:null;$('dialogTitle').textContent=s?'Edytuj sklep':'Dodaj sklep';$('number').value=s?s.number:'';$('city').value=s?s.city:'';$('editor').showModal();$('number').focus()}
-$('add').onclick=()=>openEditor(null);
-$('cancel').onclick=()=>$('editor').close();
-$('save').onclick=()=>{
- const number=$('number').value.trim().toUpperCase(),city=$('city').value.trim();
- if(!number||!city){alert('Wpisz numer sklepu i miasto.');return}
- if(editingId!==null){stores=stores.map(s=>s.id===editingId?{...s,number,city}:s)}
- else stores.push({id:Date.now()+Math.random(),number,city});
- persist();$('editor').close();render();
-};
-$('rows').onclick=e=>{
- const edit=e.target.closest('[data-edit]'),del=e.target.closest('[data-delete]');
- if(edit){openEditor(stores.find(s=>String(s.id)===edit.dataset.edit))}
- if(del){const s=stores.find(s=>String(s.id)===del.dataset.delete);if(s){deletingId=s.id;$('confirmText').textContent=s.number+' – '+s.city;$('confirm').showModal()}}
-};
-$('keep').onclick=()=>$('confirm').close();
-$('remove').onclick=()=>{stores=stores.filter(s=>s.id!==deletingId);persist();$('confirm').close();render()};
-$('search').addEventListener('input',render);
-$('sort').onclick=()=>{sortCity=!sortCity;render()};
-$('direction').onclick=()=>{asc=!asc;render()};
-$('export').onclick=()=>{
- const rows=[['Numer sklepu','Miasto'],...stores.slice().sort((a,b)=>a.number.localeCompare(b.number,'pl',{numeric:true})).map(s=>[s.number,s.city])];
- const csv='\uFEFF'+rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(';')).join('\r\n');
- const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
- const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='jysk_sklepy_kopia.csv';a.click();URL.revokeObjectURL(url);
-};
-
-function parseCsv(text){
- text=text.replace(/^\uFEFF/,'');
- const first=(text.split(/\r?\n/)[0]||'');
- const delimiter=(first.match(/;/g)||[]).length >= (first.match(/,/g)||[]).length ? ';' : ',';
- const rows=[];let row=[],field='',quoted=false;
- for(let i=0;i<text.length;i++){
-  const ch=text[i];
-  if(ch==='"'&&quoted&&text[i+1]==='"'){field+='"';i++;}
-  else if(ch==='"'){quoted=!quoted;}
-  else if(ch===delimiter&&!quoted){row.push(field);field='';}
-  else if((ch==='\n'||ch==='\r')&&!quoted){if(ch==='\r'&&text[i+1]==='\n')i++;row.push(field);if(row.some(v=>v.trim()!==''))rows.push(row);row=[];field='';}
-  else field+=ch;
- }
- row.push(field);if(row.some(v=>v.trim()!==''))rows.push(row);
- return rows;
-}
-$('import').onclick=()=>$('importFile').click();
-$('importFile').onchange=async e=>{
- const file=e.target.files&&e.target.files[0];if(!file)return;
- try{
-  const rows=parseCsv(await file.text());
-  const cleaned=rows.filter((r,i)=>r.length>=2 && !(i===0&&/numer/i.test(r[0])&&/miasto/i.test(r[1])))
-   .map(r=>({id:Date.now()+Math.random(),number:String(r[0]||'').trim().toUpperCase(),city:String(r[1]||'').trim()}))
-   .filter(s=>s.number&&s.city);
-  if(!cleaned.length){alert('Nie znaleziono poprawnych danych. Plik powinien mieć dwie kolumny: numer sklepu i miasto.');return;}
-  if(confirm('Wczytać '+cleaned.length+' sklepów? Obecna lista zostanie zastąpiona.')){
-   stores=cleaned;persist();render();alert('Import zakończony. Wczytano '+cleaned.length+' sklepów.');
-  }
- }catch(err){alert('Nie udało się odczytać pliku CSV.');}
- finally{$('importFile').value='';}
-};
-
-render();
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(()=>{}));
-}
+$('add').onclick=()=>openEditor(null);$('cancel').onclick=()=>$('editor').close();$('save').onclick=()=>{const number=$('number').value.trim().toUpperCase(),city=$('city').value.trim();if(!number||!city){alert('Wpisz numer sklepu i miasto.');return}if(editingId!==null){stores=stores.map(s=>s.id===editingId?{...s,number,city}:s)}else stores.push({id:Date.now()+Math.random(),number,city});persist();$('editor').close();render()};
+$('rows').onclick=e=>{const edit=e.target.closest('[data-edit]'),del=e.target.closest('[data-delete]');if(edit)openEditor(stores.find(s=>String(s.id)===edit.dataset.edit));if(del){const s=stores.find(s=>String(s.id)===del.dataset.delete);if(s){deletingId=s.id;$('confirmText').textContent=s.number+' – '+s.city;$('confirm').showModal()}}};
+$('keep').onclick=()=>$('confirm').close();$('remove').onclick=()=>{stores=stores.filter(s=>s.id!==deletingId);persist();$('confirm').close();render()};$('search').addEventListener('input',render);$('sort').onclick=()=>{sortCity=!sortCity;render()};$('direction').onclick=()=>{asc=!asc;render()};
+function csvCell(v){return '"'+String(v??'').replace(/"/g,'""')+'"'}
+$('export').onclick=()=>{const rows=[['Numer sklepu','Miasto'],...stores.slice().sort((a,b)=>a.number.localeCompare(b.number,'pl',{numeric:true})).map(s=>[s.number,s.city])];const csv='\uFEFF'+rows.map(r=>r.map(csvCell).join(';')).join('\r\n');const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='jysk_sklepy_kopia.csv';a.click();URL.revokeObjectURL(url)};
+function parseCSV(text){text=text.replace(/^\uFEFF/,'');const first=(text.split(/\r?\n/,1)[0]||'');const sep=(first.match(/;/g)||[]).length>=(first.match(/,/g)||[]).length?';':',';let rows=[],row=[],cell='',quoted=false;for(let i=0;i<text.length;i++){const c=text[i];if(quoted){if(c==='"'&&text[i+1]==='"'){cell+='"';i++}else if(c==='"')quoted=false;else cell+=c}else{if(c==='"')quoted=true;else if(c===sep){row.push(cell);cell=''}else if(c==='\n'){row.push(cell);rows.push(row);row=[];cell=''}else if(c!=='\r')cell+=c}}row.push(cell);if(row.some(x=>x.trim()))rows.push(row);return rows}
+$('importBtn').onclick=()=>$('importFile').click();$('importFile').onchange=async e=>{const file=e.target.files[0];if(!file)return;try{const rows=parseCSV(await file.text());if(rows.length<2)throw new Error('Plik nie zawiera danych.');let start=0;const h=rows[0].map(x=>x.trim().toLocaleLowerCase('pl'));if(h.some(x=>x.includes('numer'))||h.some(x=>x.includes('miasto')))start=1;const incoming=rows.slice(start).filter(r=>r.length>=2&&r[0].trim()&&r[1].trim()).map((r,i)=>({id:Date.now()+i+Math.random(),number:r[0].trim().toUpperCase(),city:r[1].trim()}));if(!incoming.length)throw new Error('Nie znaleziono poprawnych wierszy.');if(confirm('Import zastąpi obecną listę ('+stores.length+' sklepów). Wczytać '+incoming.length+' sklepów?')){stores=incoming;persist();render();alert('Zaimportowano '+stores.length+' sklepów.')}}catch(err){alert('Nie udało się zaimportować pliku CSV: '+err.message)}e.target.value=''};
+render();if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
 })();
 </script>
-</body>
-</html>
+</body></html>
