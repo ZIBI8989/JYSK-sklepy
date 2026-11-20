@@ -39,7 +39,7 @@ input.field{width:100%;padding:13px;border:1px solid #cbd7d2;border-radius:11px;
 <span class="count" id="count">Sklepów: 0</span>
 <button class="btn" id="sort">Sortuj: numer ↑</button>
 <button class="btn" id="direction" aria-label="Zmień kierunek">↕</button>
-<button class="btn" id="export">Eksport CSV</button>
+<button class="btn" id="export">Eksport CSV</button><button class="btn" id="import">Import CSV</button><input id="importFile" type="file" accept=".csv,text/csv" hidden>
 </div>
 <section class="table">
 <div class="head"><span>NUMER</span><span>MIASTO</span><span></span></div>
@@ -103,8 +103,41 @@ $('export').onclick=()=>{
  const rows=[['Numer sklepu','Miasto'],...stores.slice().sort((a,b)=>a.number.localeCompare(b.number,'pl',{numeric:true})).map(s=>[s.number,s.city])];
  const csv='\uFEFF'+rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(';')).join('\r\n');
  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
- const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='moje_sklepy.csv';a.click();URL.revokeObjectURL(url);
+ const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='jysk_sklepy_kopia.csv';a.click();URL.revokeObjectURL(url);
 };
+
+function parseCsv(text){
+ text=text.replace(/^\uFEFF/,'');
+ const first=(text.split(/\r?\n/)[0]||'');
+ const delimiter=(first.match(/;/g)||[]).length >= (first.match(/,/g)||[]).length ? ';' : ',';
+ const rows=[];let row=[],field='',quoted=false;
+ for(let i=0;i<text.length;i++){
+  const ch=text[i];
+  if(ch==='"'&&quoted&&text[i+1]==='"'){field+='"';i++;}
+  else if(ch==='"'){quoted=!quoted;}
+  else if(ch===delimiter&&!quoted){row.push(field);field='';}
+  else if((ch==='\n'||ch==='\r')&&!quoted){if(ch==='\r'&&text[i+1]==='\n')i++;row.push(field);if(row.some(v=>v.trim()!==''))rows.push(row);row=[];field='';}
+  else field+=ch;
+ }
+ row.push(field);if(row.some(v=>v.trim()!==''))rows.push(row);
+ return rows;
+}
+$('import').onclick=()=>$('importFile').click();
+$('importFile').onchange=async e=>{
+ const file=e.target.files&&e.target.files[0];if(!file)return;
+ try{
+  const rows=parseCsv(await file.text());
+  const cleaned=rows.filter((r,i)=>r.length>=2 && !(i===0&&/numer/i.test(r[0])&&/miasto/i.test(r[1])))
+   .map(r=>({id:Date.now()+Math.random(),number:String(r[0]||'').trim().toUpperCase(),city:String(r[1]||'').trim()}))
+   .filter(s=>s.number&&s.city);
+  if(!cleaned.length){alert('Nie znaleziono poprawnych danych. Plik powinien mieć dwie kolumny: numer sklepu i miasto.');return;}
+  if(confirm('Wczytać '+cleaned.length+' sklepów? Obecna lista zostanie zastąpiona.')){
+   stores=cleaned;persist();render();alert('Import zakończony. Wczytano '+cleaned.length+' sklepów.');
+  }
+ }catch(err){alert('Nie udało się odczytać pliku CSV.');}
+ finally{$('importFile').value='';}
+};
+
 render();
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(()=>{}));
