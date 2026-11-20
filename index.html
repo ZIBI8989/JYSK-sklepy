@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#176b59">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>JYSK Sklepy</title>
+<style>
+:root{font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#182522;background:#f4f7f6}
+*{box-sizing:border-box}body{margin:0}header{background:#176b59;color:white;padding:22px 18px 18px;position:sticky;top:0;z-index:2;box-shadow:0 2px 8px #0002}
+h1{font-size:24px;margin:0 0 14px}.search{width:100%;border:0;border-radius:13px;padding:14px 15px;font-size:16px;outline:none}
+main{max-width:720px;margin:auto;padding:16px 14px 100px}.toolbar{display:flex;align-items:center;gap:8px;margin:4px 0 14px;flex-wrap:wrap}
+.count{color:#52615d;font-size:14px;margin-right:auto}.btn{border:0;border-radius:12px;padding:11px 14px;font-size:14px;font-weight:650;background:#e1eee9;color:#155d4d}
+.table{background:white;border-radius:16px;overflow:hidden;box-shadow:0 2px 10px #173b3010}
+.head,.item{display:grid;grid-template-columns:minmax(85px,.8fr) minmax(90px,1.4fr) 88px;align-items:center;gap:8px;padding:13px 12px}
+.head{background:#eaf1ee;color:#45635a;font-size:12px;font-weight:750;letter-spacing:.05em}
+.item{border-top:1px solid #edf0ef;min-height:58px}.num{font-weight:750;color:#176b59}.city{overflow-wrap:anywhere}
+.actions{display:flex;justify-content:flex-end;gap:2px}.icon{border:0;background:transparent;font-size:19px;padding:7px;color:#53615c}
+.empty{text-align:center;color:#65736e;padding:42px 16px;line-height:1.5}
+.fab{position:fixed;right:20px;bottom:22px;background:#176b59;color:white;border:0;border-radius:28px;padding:16px 21px;font-size:16px;font-weight:700;box-shadow:0 4px 14px #0003}
+dialog{border:0;border-radius:20px;width:calc(100% - 32px);max-width:440px;padding:22px;box-shadow:0 12px 45px #0004}
+dialog::backdrop{background:#10231dcc}h2{margin:0 0 18px;font-size:21px}
+label{display:block;font-size:13px;font-weight:650;color:#52615d;margin:13px 0 6px}
+input.field{width:100%;padding:13px;border:1px solid #cbd7d2;border-radius:11px;font-size:16px}
+.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:22px}.primary{background:#176b59;color:white}.danger{color:#a32626;background:#fae8e8}
+.note{font-size:12px;color:#73817c;text-align:center;margin-top:14px}
+@media(max-width:360px){.head,.item{grid-template-columns:75px minmax(80px,1fr) 76px;padding:11px 8px}.icon{padding:5px}}
+</style>
+</head>
+<body>
+<header>
+<h1>JYSK Sklepy</h1>
+<input id="search" class="search" placeholder="Szukaj numeru lub miasta..." autocomplete="off">
+</header>
+<main>
+<div class="toolbar">
+<span class="count" id="count">Sklepów: 0</span>
+<button class="btn" id="sort">Sortuj: numer ↑</button>
+<button class="btn" id="direction" aria-label="Zmień kierunek">↕</button>
+<button class="btn" id="export">Eksport CSV</button>
+</div>
+<section class="table">
+<div class="head"><span>NUMER</span><span>MIASTO</span><span></span></div>
+<div id="rows"></div>
+</section>
+<div class="note">Dane są zapisywane w pamięci tej przeglądarki na telefonie.</div>
+</main>
+<button class="fab" id="add">＋ Dodaj sklep</button>
+<dialog id="editor">
+<h2 id="dialogTitle">Dodaj sklep</h2>
+<label for="number">Numer sklepu</label><input id="number" class="field" placeholder="np. P245" maxlength="24" autocomplete="off">
+<label for="city">Miasto</label><input id="city" class="field" placeholder="np. Kraków" maxlength="60" autocomplete="off">
+<div class="modal-actions"><button class="btn" id="cancel">Anuluj</button><button class="btn primary" id="save">Zapisz</button></div>
+</dialog>
+<dialog id="confirm">
+<h2>Usunąć sklep?</h2><p id="confirmText"></p>
+<div class="modal-actions"><button class="btn" id="keep">Anuluj</button><button class="btn danger" id="remove">Usuń</button></div>
+</dialog>
+<script>
+(()=> {
+const KEY='mojeSklepyData_v1';
+let stores=[];try{stores=JSON.parse(localStorage.getItem(KEY)||'[]')}catch(e){}
+let sortCity=false,asc=true,editingId=null,deletingId=null;
+const $=id=>document.getElementById(id);
+const collator=new Intl.Collator('pl',{sensitivity:'base'});
+function persist(){localStorage.setItem(KEY,JSON.stringify(stores))}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function render(){
+ const q=$('search').value.trim().toLocaleLowerCase('pl');
+ let list=stores.filter(s=>s.number.toLocaleLowerCase('pl').includes(q)||s.city.toLocaleLowerCase('pl').includes(q));
+ list.sort((a,b)=>{let c=sortCity?collator.compare(a.city,b.city):a.number.localeCompare(b.number,'pl',{numeric:true,sensitivity:'base'});return asc?c:-c});
+ $('count').textContent='Sklepów: '+stores.length;
+ $('sort').textContent='Sortuj: '+(sortCity?'miasto':'numer');
+ $('direction').textContent=asc?'↑':'↓';
+ $('rows').innerHTML=list.length?list.map(s=>`<div class="item">
+ <span class="num">${esc(s.number)}</span><span class="city">${esc(s.city)}</span>
+ <span class="actions"><button class="icon" data-edit="${s.id}" aria-label="Edytuj">✎</button><button class="icon" data-delete="${s.id}" aria-label="Usuń">×</button></span></div>`).join(''):
+ `<div class="empty">${stores.length?'Nie znaleziono sklepu.':'Nie masz jeszcze sklepów.<br>Dodaj pierwszy przyciskiem poniżej.'}</div>`;
+}
+function openEditor(s){editingId=s?s.id:null;$('dialogTitle').textContent=s?'Edytuj sklep':'Dodaj sklep';$('number').value=s?s.number:'';$('city').value=s?s.city:'';$('editor').showModal();$('number').focus()}
+$('add').onclick=()=>openEditor(null);
+$('cancel').onclick=()=>$('editor').close();
+$('save').onclick=()=>{
+ const number=$('number').value.trim().toUpperCase(),city=$('city').value.trim();
+ if(!number||!city){alert('Wpisz numer sklepu i miasto.');return}
+ if(editingId!==null){stores=stores.map(s=>s.id===editingId?{...s,number,city}:s)}
+ else stores.push({id:Date.now()+Math.random(),number,city});
+ persist();$('editor').close();render();
+};
+$('rows').onclick=e=>{
+ const edit=e.target.closest('[data-edit]'),del=e.target.closest('[data-delete]');
+ if(edit){openEditor(stores.find(s=>String(s.id)===edit.dataset.edit))}
+ if(del){const s=stores.find(s=>String(s.id)===del.dataset.delete);if(s){deletingId=s.id;$('confirmText').textContent=s.number+' – '+s.city;$('confirm').showModal()}}
+};
+$('keep').onclick=()=>$('confirm').close();
+$('remove').onclick=()=>{stores=stores.filter(s=>s.id!==deletingId);persist();$('confirm').close();render()};
+$('search').addEventListener('input',render);
+$('sort').onclick=()=>{sortCity=!sortCity;render()};
+$('direction').onclick=()=>{asc=!asc;render()};
+$('export').onclick=()=>{
+ const rows=[['Numer sklepu','Miasto'],...stores.slice().sort((a,b)=>a.number.localeCompare(b.number,'pl',{numeric:true})).map(s=>[s.number,s.city])];
+ const csv='\uFEFF'+rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(';')).join('\r\n');
+ const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+ const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='moje_sklepy.csv';a.click();URL.revokeObjectURL(url);
+};
+render();
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+}
+})();
+</script>
+</body>
+</html>
